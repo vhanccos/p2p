@@ -33,21 +33,22 @@ public class FileMessage implements Message, Serializable {
 
     @Override
     public void handle(Peer peer, Connection connection) {
+        File directory = new File("received");
+    
+        if (!directory.exists() && !directory.mkdir()) {
+            System.err.println("Failed to create destination directory.");
+            return;
+        }
+    
+        File destination = new File(directory, fileName);
+    
         try {
-            File directory = new File("received");
-            if (!directory.exists() && !directory.mkdir()) {
-                System.err.println(" No se pudo crear el directorio de destino.");
-                return;
-            }
-
-            File destination = new File(directory, fileName);
             Files.write(destination.toPath(), fileContent);
-
-            System.out.printf(" Archivo recibido desde %s: %s", senderName, fileName);
-            System.out.println(" Guardado en: " + destination.getAbsolutePath());
-
+    
+            System.out.printf("File received from %s: %s%n", senderName, fileName);
+            System.out.println("Saved to: " + destination.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(" Error al guardar el archivo recibido: " + e.getMessage());
+            System.err.println("Error saving received file: " + e.getMessage());
             e.printStackTrace();
         }
     }

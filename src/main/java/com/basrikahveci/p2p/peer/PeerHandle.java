@@ -1,7 +1,11 @@
 package com.basrikahveci.p2p.peer;
+import java.io.File;
+import java.nio.file.Files;
+
 
 import com.basrikahveci.p2p.peer.network.PeerChannelHandler;
 import com.basrikahveci.p2p.peer.network.PeerChannelInitializer;
+import com.basrikahveci.p2p.peer.network.message.FileMessage;
 import com.basrikahveci.p2p.peer.service.ConnectionService;
 import com.basrikahveci.p2p.peer.service.LeadershipService;
 import com.basrikahveci.p2p.peer.service.PingService;
@@ -145,5 +149,18 @@ public class PeerHandle {
     public void disconnect(final String peerName) {
         peerEventLoopGroup.execute(() -> peer.disconnect(peerName));
     }
-
+    public void sendFileToPeer(String peerName, String filePath) throws Exception {
+        File file = new File(filePath);
+    
+        if (!file.exists()) {
+            throw new IllegalArgumentException("File not found: " + filePath);
+        }
+    
+        byte[] content = Files.readAllBytes(file.toPath());
+        String fileName = file.getName();
+    
+        FileMessage message = new FileMessage(fileName, content, config.getPeerName());
+    
+        peerEventLoopGroup.execute(() -> peer.sendFileMessage(peerName, message));
+    }
 }

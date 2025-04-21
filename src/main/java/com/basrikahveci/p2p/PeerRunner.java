@@ -50,6 +50,14 @@ public class PeerRunner {
                 handle.disconnect(tokens[1]);
             } else if (command.equals("election")) {
                 handle.scheduleLeaderElection();
+
+            }else if (command.startsWith("sendfile ")) {
+                final String[] tokens = command.split(" ", 3);
+                final String targetPeer = tokens[1];
+                final String filePath = tokens[2];
+                handle.sendFileToPeer(targetPeer, filePath);
+
+
             } else {
                 result = INVALID_COMMAND;
             }

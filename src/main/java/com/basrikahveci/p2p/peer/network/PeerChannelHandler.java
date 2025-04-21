@@ -2,6 +2,7 @@ package com.basrikahveci.p2p.peer.network;
 
 import com.basrikahveci.p2p.peer.Config;
 import com.basrikahveci.p2p.peer.Peer;
+import com.basrikahveci.p2p.peer.network.message.FileMessage;
 import com.basrikahveci.p2p.peer.network.message.Handshake;
 import com.basrikahveci.p2p.peer.network.message.Message;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -51,11 +52,31 @@ public class PeerChannelHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    public void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
-        LOGGER.debug("Message {} received from {}", message.getClass(), ctx.channel().remoteAddress());
-        final Connection connection = getSessionAttribute(ctx).get();
+public void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
+    LOGGER.debug("Message {} received from {}", message.getClass(), ctx.channel().remoteAddress());
+    final Connection connection = getSessionAttribute(ctx).get();
+
+    if (message instanceof FileMessage) {
+        FileMessage fileMessage = (FileMessage) message;
+        saveReceivedFile(fileMessage);
+        LOGGER.info("File '{}' received from {}", fileMessage.getFileName(), fileMessage.getSenderName());
+    } else {
         message.handle(peer, connection);
     }
+}
+private void saveReceivedFile(FileMessage fileMessage) {
+    try {
+        java.nio.file.Path dir = java.nio.file.Paths.get("received_files");
+        java.nio.file.Files.createDirectories(dir);
+
+        java.nio.file.Path filePath = dir.resolve(fileMessage.getFileName());
+        java.nio.file.Files.write(filePath, fileMessage.getFileContent());
+
+        LOGGER.info("File saved in: {}", filePath.toAbsolutePath());
+    } catch (Exception e) {
+        LOGGER.error("Error saving the received file", e);
+    }
+}
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {

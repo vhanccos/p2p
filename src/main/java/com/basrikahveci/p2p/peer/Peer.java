@@ -1,6 +1,7 @@
 package com.basrikahveci.p2p.peer;
 
 import com.basrikahveci.p2p.peer.network.Connection;
+import com.basrikahveci.p2p.peer.network.message.FileMessage;
 import com.basrikahveci.p2p.peer.network.message.ping.CancelPongs;
 import com.basrikahveci.p2p.peer.network.message.ping.Ping;
 import com.basrikahveci.p2p.peer.network.message.ping.Pong;
@@ -10,6 +11,9 @@ import com.basrikahveci.p2p.peer.service.PingService;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.IOException;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -87,6 +91,17 @@ public class Peer {
             leadershipService.scheduleElection();
         }
     }
+    public void handleFileMessage(Connection connection, FileMessage fileMessage) {
+    LOGGER.info("Received file: {}", fileMessage.getFileName());
+
+    try {
+        Files.write(Paths.get("received_" + fileMessage.getFileName()), fileMessage.getFileContent());
+        LOGGER.info("File {} saved successfully.", fileMessage.getFileName());
+    } catch (IOException e) {
+        LOGGER.error("Error saving the file: {}", e.getMessage());
+    }
+}
+
 
     public void cancelPings(final Connection connection, final String removedPeerName) {
         if (running) {
@@ -111,6 +126,22 @@ public class Peer {
             LOGGER.warn("Pong of {} is ignored since not running", connection.getPeerName());
         }
     }
+    public void sendFileMessage(String peerName, FileMessage fileMessage) {
+    if (isShutdown()) {
+        LOGGER.warn("Cannot send file message since the peer is not running.");
+        return;
+    }
+
+    Connection connection = connectionService.getConnection(peerName);
+
+    if (connection == null) {
+        LOGGER.error("No connection found for peer {}", peerName);
+        return;
+    }
+
+    connection.send(fileMessage);
+    LOGGER.info("File message sent to peer {}", peerName);
+}
 
     public void keepAlivePing() {
         if (isShutdown()) {
